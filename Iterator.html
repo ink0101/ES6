@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Iterator 接口</title>
+	<script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.js"></script>
+	<script type="text/javascript">
+		// 模拟next()方法返回值
+		function makeIterator(array) {
+			var nextIndex = 0;
+			return {
+				next: function() {
+					return nextIndex < array.length ?
+						{value: array[nextIndex ++], done: false} :
+						{value: undefined, done: true};
+				}
+			}
+		}
+
+		var it = makeIterator(['a', 'b']);
+		it.next();
+		it.next();
+		it.next();
+
+		// 由遍历器对象模拟出数据结构
+		function idMaker() {
+			var index = 0;
+
+			return {
+				next: function() {
+					return {value: index ++, done: false};
+				}
+			}
+		}
+
+		var it = idMaker();
+		it.next();//{value: 0, done: false}
+		it.next();//{value: 1, done: false}
+		it.next();//{value: 2, done: false}
+
+		//原生Iterator接口
+		let arr = ['a', 'b', 'c'];
+		let iter = arr[Symbol.iterator]();
+
+		iter.next();
+
+		//给对象部署遍历器接口
+		class RangeIterator {
+			constructor(start, stop) {
+				this.value = start;
+				this.stop = stop;
+			}
+
+			[Symbol.iterator]() {return this;}
+
+			next() {
+				var value = this.value;
+				if(value < this.stop) {
+					this.value ++;
+					return {done: false, value: value};
+				} else {
+					return {done: true, value: undefined};
+				}
+			}
+		}
+
+		function range(start, stop) {
+			return new RangeIterator(start, stop);
+		}
+
+		for(var value of range(0, 3)) {
+			console.log(value);
+		}
+
+		//实现指针结构
+		function Obj(value) {
+			this.value = value;
+			this.next = null;
+		}
+		Obj.prototype[Symbol.iterator] = function() {
+			//???
+			var iterator = {
+				next: next
+			};
+
+			var current = this;
+
+			function next() {
+				if(current) {
+					var value = current.value;
+					var done = current === null;
+					current = current.next;
+					return {
+						done: done,
+						value: value
+					}
+				} else {
+					return {
+						done: true
+					}
+				}
+			}
+
+			return iterator;
+		}
+
+		var one = new Obj(1);
+		var two = new Obj(2);
+		var three = new Obj(3);
+
+		one.next = two;
+		two.next = three;
+
+		for(var i of one) {
+			console.log(i);
+		}
+
+		//为对象添加Iterator接口
+		let obj = {
+			data: ['hello', 'world'],
+			[Symbol.iterator]() {
+				const self = this;
+				let index = 0;
+				return {
+					next() {
+						if(index < self.data.length) {
+							return {
+								value: self.data[index ++],
+								done: false
+							};
+						} else {
+							return {
+								value: undefined,
+								done: true,
+							};
+						}
+					}
+				}
+			}
+		}
+
+		let objIter = obj[Symbol.iterator]();
+		objIter.next();
+
+		//类数组对象部署Iterator接口
+		let iterator = {
+			0: 'a',
+			1: 'b',
+			2: 'c',
+			length: 3,
+			[Symbol.iterator]: Array.prototype[Symbol.iterator]
+		};
+		for(let item of iterator) {
+			console.log(item);
+		}
+
+		// 解构赋值
+		let set = new Set().add('a').add('b').add('c');
+		console.log(set);
+		let [x, y] = set;
+		console.log(x, y);
+		let [first, ...reset] = set;
+		console.log();
+
+		// return()方法
+
+		function readLinesSync(file) {
+			return {
+				next() {
+					if(file.isAtEndOfFile()) {
+						file.close();
+						return {done: true};
+					}
+				},
+				return() {
+					file.close();
+					return {done: true};
+				}
+			};
+		}
+		
+		for(let line of readLinesSync(fileName)) {
+			console.log(x);
+			break;
+		}
+
+		// 数组的for...of for...in
+		let arr = [3, 5, 7];
+		arr.foo = 'hello';
+
+		for(let i in arr) {
+			console.log(typeof i, i);
+		}
+
+		for(let i of arr.keys()) {
+			console.log(typeof i, i);
+		}
+
+		// for...of正确识别字符串UTF-16字符
+		for(let x of 'a\ud83d\udc0a') {
+			console.log(x);
+		}
+
+		
+		const obj = {
+			a: '1',
+			b: '2',
+			c: '3',
+			d: '4'
+		};
+		//使用Object.keys方法将键名生成一个数组
+		for(let key of Object.keys(obj)) {
+			console.log(key + ':' + obj[key]);
+		}
+		//使用Generator函数将对象重新包装一下
+		function* entries(obj) {
+			for(let key of Object.keys(obj)) {
+				yield [key, obj[key]];
+			}
+		}
+
+		for(let [key, value] of entries(obj)) {
+			console.log(key, '->', value);
+		}
+	</script>
+</head>
+<body>
+	
+</body>
+</html>
+
+
