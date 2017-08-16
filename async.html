@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>异步编程</title>
+	<script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.js"></script>
+	<script type="text/javascript">
+		function f1(f2) {
+			setTimeout(function () {
+				f2();
+			},1000);
+			console.log('done');
+		}
+		function f2() {
+			console.log('f2');
+		}
+		f1(f2);
+
+		// function* f(x) {
+		// 	var y = 2 * (yield (x + 1));
+		// 	console.log('x', x);
+		// 	console.log('y', y);
+		// 	var z = yield (y / 3);
+		// 	console.log('z', z);
+		// 	return (x + y + z);
+		// }
+
+		// var a = f(5);
+
+
+		// for...of循环实现裴波那契数列
+		function* fibonacci() {
+			let [pre, curr] = [0, 1];
+			for(;;) {
+				[pre, curr] = [curr, pre + curr];
+				yield curr;
+			}	
+		}
+
+		for(let n of fibonacci()) {
+			if(n > 1000) break;
+			console.log(n);
+		}
+
+		// 遍历
+		function* numbers() {
+			yield 1;
+			yield 2;
+			return 3;
+			yield 4;
+		}
+
+		[...numbers()];
+		Array.from(numbers());
+		let [x, y] = numbers();
+		for(let n of numbers()) {
+			console.log(n);
+		}
+
+		//通过generator函数为原生js对象添加Iterator接口
+		function* objectEntries(obj) {
+			// 返回目标对象 属性名组成的数组
+			let propKeys = Reflect.ownKeys(obj);
+			console.log(propKeys);
+
+			for(let propKey of propKeys) {
+				yield [propKey, obj[propKey]];
+			}
+		}
+
+		let jane = {first: 'Jane', last: 'Doe'};
+		console.log(objectEntries(jane));
+		for(let [key, value] of objectEntries(jane)) {
+			console.log(`${key}: ${value}`);
+		}
+
+		// 另一种写法，将Generator函数加到对象的Symbol.iterator属性上
+		function* objectEntries() {
+			let propKeys = Object.keys(this);
+
+			for(let propKey of propKeys) {
+				yield [propKey, this[propKey]];
+			}
+		}
+
+		let jane = {first: 'jane', lase: 'doe'};
+
+		jane[Symbol.iterator] = objectEntries;
+
+		for(let [key, value] of jane) {
+			console.log(`${key}: ${value}`);
+		}
+
+		// throw()
+		var g = function* () {
+			while(true) {
+				try {
+					yield;
+				} catch(e) {
+					if(e != 'a') throw e;
+					console.log('内部捕获', e);
+				}
+			}
+		};
+
+		var i = g();
+		i.next();
+
+		try{
+			i.throw('a');
+			i.throw('b');
+		} catch(e) {
+			console.log('外部捕获', e);
+		}
+
+		// throw()
+		var g = function* () {
+			while(true) {
+				try {
+					yield;
+				} catch (e) {
+					if(e != 'a') throw e;
+					console.log('内部捕获', e);
+				}
+			}
+		}
+
+		var i = g();
+		i.next();
+
+		try{
+			throw new Error('a');
+			throw new Error('b');
+		} catch (e) {
+			console.log('外部捕获', e);
+		}
+		// 外部捕获 Error:a
+
+		var g = function* () {
+			while(true) {
+				yield;
+				console.log('内部捕获', e);
+			}
+		};
+
+		var i = g();
+		i.next();
+
+		try{
+			i.throw('a');
+			i.throw('b');
+		} catch(e) {
+			console.log('外部捕获', e);
+		}
+		// 外部捕获 a
+
+		var gen = function* () {
+			try{
+				yield console.log('hello');
+				yield console.log('world1');
+			} catch (e) {
+				console.log(e);
+			}
+			yield console.log('world2');
+		}
+
+		var g = gen();
+		g.next();
+
+		g.throw('err');
+		g.next();
+		// try{
+		// 	g.throw('err');
+		// } catch(e) {
+		// 	g.next();
+		// }
+		//hello
+
+		var gen = function* () {
+			yield console.log('hello');
+			yield console.log('world');
+		}
+
+		var g = gen();
+		g.next();
+
+		try{
+			throw new Error();
+		} catch(e) {
+			g.next();
+		}
+
+		//hello
+		//world
+
+		// 内外错误区别
+		var g = function* g() {
+			try{
+				var a = yield foo('a');
+				var b = yield foo('b');
+				var c = yield foo('c');
+			} catch (e) {
+				console.log('内部', e);
+			}
+
+			console.log('a, b, c');
+		}
+		function foo(v) {
+			console.log(v);
+		}
+		var i = g();
+		i.next();
+		
+		try{
+			i.throw('err');
+			// throw new Error();
+		} catch (e) {
+			console.log('外部', e);
+			i.next();
+		}
+
+
+		//函数体内错误也可以被函数体外的catch捕获
+		function* foo() {
+			var x = yield 3;
+			var y = x.toUperCase();
+			yield y;
+		}
+
+		var it = foo();
+
+		it.next();
+
+		try {
+			it.next(42);
+		} catch (e) {
+			console.log(e);
+		}
+
+		//一旦函数执行过程中抛出错误，就不会再执行下去了
+		function* g() {
+			yield 1;
+			console.log('throwing an exception');
+			throw new Error('generator broke');
+			yield 2;
+			yield 3;
+		}
+
+		function log(generator) {
+			var v;
+			console.log('starting generator');
+			try{
+				v = generator.next();
+				console.log('第一次运行next方法', v);
+			} catch(err) {
+				console.log('捕捉错误', err);
+			}
+			try{
+				v = generator.next();
+				console.log('第二次运行next方法', v);
+			} catch(err) {
+				console.log('捕捉错误', err);
+			}
+			try{
+				v = generator.next();
+				console.log('第三次运行next方法', v);
+			} catch(err) {
+				console.log('捕捉错误', err);
+			}
+			console.log('caller done');
+		}
+
+		log(g());
+	</script>
+</head>
+<body>
+	
+</body>
+</html>
+
+
