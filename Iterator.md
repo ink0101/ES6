@@ -285,7 +285,8 @@ for(let line of readLinesSync(fileName)) {
 
 ```javascript
 //for...of循环会正确识别32位UTF-16字符
-for(let x of 'a\ud83d\udc0a') {
+for(let x of '
+') {
     console.log(x);
 }
 ```
